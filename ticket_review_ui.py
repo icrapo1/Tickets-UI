@@ -168,14 +168,14 @@ def process_tickets_ui(excel_file, tickets_file):
     html_table = df_out.to_html(classes="tickets-table", index=False, escape=False)
     html = f"""
 <style>
-  .tickets-table {{ border-collapse: collapse; width: 100%; }}
+  .tickets-table {{ border-collapse: collapse; width: 100%; table-layout: fixed; }}
   .tickets-table th, .tickets-table td {{ border: 1px solid #ddd; padding: 8px; }}
   .tickets-table tr:nth-child(even) {{ background-color: #f2f2f2; }}
   .tickets-table th {{ padding: 12px; background-color: #4CAF50; color: white; }}
-  .tickets-table td {{ white-space: pre-wrap !important; }}
-  #tickets_review_html {{ overflow-x: auto; }}
+  .tickets-table th:nth-child(5), .tickets-table td:nth-child(5) {{ width: 150px; }}
+  .tickets-table td {{ white-space: pre-wrap !important; word-break: break-word; }}
 </style>
-<div id="tickets_review_html">
+<div>
 {html_table}
 </div>
 """
@@ -193,9 +193,8 @@ def create_ticket_review_ui():
             status = gr.Markdown(visible=True)
             # Chain events: show status -> process IA -> clear status
             evt = process_btn.click(
-                fn=lambda: "Analisando IA...",
-                inputs=[], outputs=[status],
-                queue=False
+                fn=lambda: '<div id="loading"><div class="spinner"></div><span id="timer">0s</span></div><style>.spinner { border: 4px solid rgba(0,0,0,0.1); border-left-color: #4CAF50; border-radius:50%; width:16px; height:16px; animation:spin 1s linear infinite; } @keyframes spin { to { transform:rotate(360deg); } }</style><script>var start=Date.now(); setInterval(function(){ var sec = Math.floor((Date.now() - start) / 1000); document.getElementById("timer").innerText = sec + "s"; }, 1000);</script>',
+                inputs=[], outputs=[status], queue=False
             )
             evt = evt.then(
                 fn=process_tickets_ui,
