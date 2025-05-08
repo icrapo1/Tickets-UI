@@ -145,7 +145,7 @@ def process_tickets_ui(excel_file, tickets_file):
             respostas_relevantes(row['mensagem'], respostas), [m for m in row['midia'].split(';') if m]
         )
         # filter media links, ignore torabit domain
-        media_list = [m.strip() for m in row['midia'].split(';') if m.strip() and not m.startswith('https://tora.torabit.com.br')]
+        media_list = [m.strip() for m in row['midia'].split(';') if m.strip() and not m.strip().startswith('https://tora.torabit.com.br')]
         # build HTML string with numbered links within same cell
         links_html = '<br>'.join([
             f"Link {i+1}: <a href='{url}' target='_blank'>{url}</a>"
@@ -187,26 +187,24 @@ def create_ticket_review_ui():
         with gr.Group():
             excel_file = gr.File(label="Arquivo de configuração (torabit.xlsx)", type="filepath")
             tickets_file = gr.File(label="Arquivo de tickets extraídos (tickets_extraidos.xlsx)", type="filepath")
-            process_btn = gr.Button("Processar Tickets", loading_text="Analisando IA...")
+            process_btn = gr.Button("Processar Tickets")
         with gr.Group():
             review_html = gr.HTML(label="Revisão de Tickets")
-            gr.HTML("""
-<style>
-#tickets_review_html td:nth-child(5) {
-    white-space: pre-line !important;
-    word-break: break-all;
-    font-family: monospace;
-    font-size: 13px;
-    padding: 6px 8px;
-}
-</style>
-""")
-            # Botão de processar com indicador de progresso nativo do Gradio
-            process_btn.click(
+            status = gr.Markdown(visible=True)
+            # Chain events: show status -> process IA -> clear status
+            evt = process_btn.click(
+                fn=lambda: "Analisando IA...",
+                inputs=[], outputs=[status],
+                queue=False
+            )
+            evt = evt.then(
                 fn=process_tickets_ui,
                 inputs=[excel_file, tickets_file],
-                outputs=[review_html],
-                show_progress=True
+                outputs=[review_html]
+            )
+            evt.then(
+                fn=lambda: "",
+                inputs=[], outputs=[status]
             )
     return demo
 
