@@ -196,8 +196,13 @@ def create_ticket_review_ui():
 }
 </style>
 """)
-            with gr.Spinner("Analisando IA...", elem_id="ia-spinner"):
-                process_btn.click(fn=process_tickets_ui, inputs=[excel_file, tickets_file], outputs=[review_html])
+            # Botão de processar com indicador de progresso nativo do Gradio
+            process_btn.click(
+                fn=process_tickets_ui,
+                inputs=[excel_file, tickets_file],
+                outputs=[review_html],
+                show_progress=True
+            )
     return demo
 
 
