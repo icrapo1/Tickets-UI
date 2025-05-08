@@ -89,12 +89,12 @@ Responda em JSON: {{ "assunto": ..., "sentiment": ..., "response": ... }}
     ]
     try:
         resp = openai.chat.completions.create(
-            model="gpt-4o-2024-11-20", messages=msgs, max_tokens=1024, temperature=1
+            model="gpt-4o-mini-2024-07-18", messages=msgs, max_tokens=1024, temperature=1
         )
     except Exception as e:
         if "invalid_image_url" in str(e):
             resp = openai.chat.completions.create(
-                model="gpt-4o-2024-11-20", messages=[msgs[0],{"role":"user","content":base}], max_tokens=1024, temperature=1
+                model="gpt-4o-mini-2024-07-18", messages=[msgs[0],{"role":"user","content":base}], max_tokens=1024, temperature=1
             )
         else:
             raise
@@ -160,7 +160,22 @@ def process_tickets_ui(excel_file, tickets_file):
                 'Enviar': ''
             })
         time.sleep(7)
-    return pd.DataFrame(registros)
+    df_out = pd.DataFrame(registros)
+    html_table = df_out.to_html(classes="tickets-table", index=False, escape=False)
+    html = f"""
+<style>
+  .tickets-table {{ border-collapse: collapse; width: 100%; }}
+  .tickets-table th, .tickets-table td {{ border: 1px solid #ddd; padding: 8px; }}
+  .tickets-table tr:nth-child(even) {{ background-color: #f2f2f2; }}
+  .tickets-table th {{ padding: 12px; background-color: #4CAF50; color: white; }}
+  .tickets-table td {{ white-space: normal; }}
+  #tickets_review_html {{ overflow-x: auto; }}
+</style>
+<div id="tickets_review_html">
+{html_table}
+</div>
+"""
+    return html
 
 
 def create_ticket_review_ui():
@@ -170,17 +185,10 @@ def create_ticket_review_ui():
             tickets_file = gr.File(label="Arquivo de tickets extraídos (tickets_extraidos.xlsx)", type="filepath")
             process_btn = gr.Button("Processar Tickets")
         with gr.Group():
-            review_df = gr.Dataframe(
-                headers=["ID","Nome","Handle","Texto","Mídias","Assunto","Sentimento","Sugestão","Enviar"],
-                label="Revisão de Tickets",
-                interactive=True,
-                column_widths=["50px","150px","150px","300px","200px","150px","100px","300px","100px"],
-                wrap=True,
-                elem_id="tickets_review_table"
-            )
+            review_html = gr.HTML(label="Revisão de Tickets")
             gr.HTML("""
 <style>
-#tickets_review_table td:nth-child(5) {
+#tickets_review_html td:nth-child(5) {
     white-space: pre-line !important;
     word-break: break-all;
     font-family: monospace;
@@ -189,7 +197,7 @@ def create_ticket_review_ui():
 }
 </style>
 """)
-            process_btn.click(fn=process_tickets_ui, inputs=[excel_file, tickets_file], outputs=[review_df])
+            process_btn.click(fn=process_tickets_ui, inputs=[excel_file, tickets_file], outputs=[review_html])
     return demo
 
 
