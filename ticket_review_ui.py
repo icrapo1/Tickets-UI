@@ -20,9 +20,9 @@ def is_resposta_automatica(msg):
     if any(p in txt for p in auto_respostas):
         return True
     auto_patterns = [
-        "💳 Para serviços do Bilhete Único:",
-        "🤳 Outros assuntos:",
-        "📱 Sugestões, reclamações e elogios",
+        " Para serviços do Bilhete Único:",
+        " Outros assuntos:",
+        " Sugestões, reclamações e elogios",
         "https://atendimento.sptrans.com.br/login",
         "https://linktr.ee/sptransoficial",
         "sp156.prefeitura.sp.gov.br"
@@ -81,8 +81,7 @@ Responda em JSON: {{ "assunto": ..., "sentiment": ..., "response": ... }}
     parts = [{"type":"text","text":base}]
     if midia_urls:
         for url in midia_urls:
-            if url.startswith("https://lookaside.fbsbx.com"):
-                parts.append({"type":"image_url","image_url":{"url":url}})
+            parts.append({"type":"image_url","image_url":{"url":url}})
     msgs = [
         {"role":"system","content":"Você é um assistente especializado em atendimento ao cliente brasileiro."},
         {"role":"user","content":parts}
@@ -126,8 +125,7 @@ def process_tickets_ui(excel_file, tickets_file):
             if isinstance(m, str) and not is_resposta_automatica(m):
                 msgs.append(f"| Mensagem {i+1}: {m.strip()}")
         for mid in g.get('midia', pd.Series()).dropna().astype(str):
-            if mid.startswith('https://lookaside.fbsbx.com'):
-                mids.append(mid)
+            mids.append(mid)
         if not msgs and not mids:
             continue
         if not msgs and mids:
@@ -147,13 +145,13 @@ def process_tickets_ui(excel_file, tickets_file):
             respostas_relevantes(row['mensagem'], respostas), [m for m in row['midia'].split(';') if m]
         )
         midias = [m.strip() for m in row['midia'].split(';') if m.strip()] or ['']
-        for midia_link in midias:
+        for j, midia_link in enumerate(midias):
             registros.append({
                 'ID': idx+1,
                 'Nome': row['nome'],
                 'Handle': row['handle'],
                 'Texto': row['mensagem'],
-                'Mídias': midia_link,
+                'Mídias': f"Link {j+1}: <a href='{midia_link}' target='_blank'>{midia_link}</a>",
                 'Assunto': asn,
                 'Sentimento': sentiment,
                 'Sugestão': sug,
@@ -161,6 +159,7 @@ def process_tickets_ui(excel_file, tickets_file):
             })
         time.sleep(7)
     df_out = pd.DataFrame(registros)
+    df_out['Texto'] = df_out['Texto'].apply(lambda x: x.replace('\n', '<br>'))
     html_table = df_out.to_html(classes="tickets-table", index=False, escape=False)
     html = f"""
 <style>
@@ -168,7 +167,7 @@ def process_tickets_ui(excel_file, tickets_file):
   .tickets-table th, .tickets-table td {{ border: 1px solid #ddd; padding: 8px; }}
   .tickets-table tr:nth-child(even) {{ background-color: #f2f2f2; }}
   .tickets-table th {{ padding: 12px; background-color: #4CAF50; color: white; }}
-  .tickets-table td {{ white-space: normal; }}
+  .tickets-table td {{ white-space: pre-wrap !important; }}
   #tickets_review_html {{ overflow-x: auto; }}
 </style>
 <div id="tickets_review_html">
@@ -197,7 +196,8 @@ def create_ticket_review_ui():
 }
 </style>
 """)
-            process_btn.click(fn=process_tickets_ui, inputs=[excel_file, tickets_file], outputs=[review_html])
+            with gr.Spinner("Analisando IA...", elem_id="ia-spinner"):
+                process_btn.click(fn=process_tickets_ui, inputs=[excel_file, tickets_file], outputs=[review_html])
     return demo
 
 
