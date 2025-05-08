@@ -151,7 +151,7 @@ def process_tickets_ui(excel_file, tickets_file):
             'Nome': row['nome'],
             'Handle': row['handle'],
             'Texto': row['mensagem'],
-            'Mídias': row['midia'],
+            'Mídias': row['midia'].replace(';', '\n'),
             'Assunto': asn,
             'Sentimento': sentiment,
             'Sugestão': sug,
@@ -176,7 +176,17 @@ def create_ticket_review_ui():
                 wrap=True,
                 elem_id="tickets_review_table"
             )
-            gr.HTML("<style>#tickets_review_table td:nth-child(5){white-space:pre-wrap!important;}</style>")
+            gr.HTML("""
+<style>
+#tickets_review_table td:nth-child(5) {
+    white-space: pre-line !important;
+    word-break: break-all;
+    font-family: monospace;
+    font-size: 13px;
+    padding: 6px 8px;
+}
+</style>
+""")
             process_btn.click(fn=process_tickets_ui, inputs=[excel_file, tickets_file], outputs=[review_df])
     return demo
 
