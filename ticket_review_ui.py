@@ -144,19 +144,24 @@ def process_tickets_ui(excel_file, tickets_file):
             row['mensagem'], row['nome'], row['handle'], assuntos,
             respostas_relevantes(row['mensagem'], respostas), [m for m in row['midia'].split(';') if m]
         )
-        midias = [m.strip() for m in row['midia'].split(';') if m.strip()] or ['']
-        for j, midia_link in enumerate(midias):
-            registros.append({
-                'ID': idx+1,
-                'Nome': row['nome'],
-                'Handle': row['handle'],
-                'Texto': row['mensagem'],
-                'Mídias': f"Link {j+1}: <a href='{midia_link}' target='_blank'>{midia_link}</a>",
-                'Assunto': asn,
-                'Sentimento': sentiment,
-                'Sugestão': sug,
-                'Enviar': ''
-            })
+        # filter media links, ignore torabit domain
+        media_list = [m.strip() for m in row['midia'].split(';') if m.strip() and not m.startswith('https://tora.torabit.com.br')]
+        # build HTML string with numbered links within same cell
+        links_html = '<br>'.join([
+            f"Link {i+1}: <a href='{url}' target='_blank'>{url}</a>"
+            for i, url in enumerate(media_list)
+        ])
+        registros.append({
+            'ID': idx+1,
+            'Nome': row['nome'],
+            'Handle': row['handle'],
+            'Texto': row['mensagem'],
+            'Mídias': links_html,
+            'Assunto': asn,
+            'Sentimento': sentiment,
+            'Sugestão': sug,
+            'Enviar': ''
+        })
         time.sleep(7)
     df_out = pd.DataFrame(registros)
     df_out['Texto'] = df_out['Texto'].apply(lambda x: x.replace('\n', '<br>'))
@@ -182,7 +187,7 @@ def create_ticket_review_ui():
         with gr.Group():
             excel_file = gr.File(label="Arquivo de configuração (torabit.xlsx)", type="filepath")
             tickets_file = gr.File(label="Arquivo de tickets extraídos (tickets_extraidos.xlsx)", type="filepath")
-            process_btn = gr.Button("Processar Tickets")
+            process_btn = gr.Button("Processar Tickets", loading_text="Analisando IA...")
         with gr.Group():
             review_html = gr.HTML(label="Revisão de Tickets")
             gr.HTML("""
