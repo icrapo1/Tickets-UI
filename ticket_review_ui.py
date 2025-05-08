@@ -146,17 +146,19 @@ def process_tickets_ui(excel_file, tickets_file):
             row['mensagem'], row['nome'], row['handle'], assuntos,
             respostas_relevantes(row['mensagem'], respostas), [m for m in row['midia'].split(';') if m]
         )
-        registros.append({
-            'ID': idx+1,
-            'Nome': row['nome'],
-            'Handle': row['handle'],
-            'Texto': row['mensagem'],
-            'Mídias': row['midia'].replace(';', '\n'),
-            'Assunto': asn,
-            'Sentimento': sentiment,
-            'Sugestão': sug,
-            'Enviar': ''
-        })
+        midias = [m.strip() for m in row['midia'].split(';') if m.strip()] or ['']
+        for midia_link in midias:
+            registros.append({
+                'ID': idx+1,
+                'Nome': row['nome'],
+                'Handle': row['handle'],
+                'Texto': row['mensagem'],
+                'Mídias': midia_link,
+                'Assunto': asn,
+                'Sentimento': sentiment,
+                'Sugestão': sug,
+                'Enviar': ''
+            })
         time.sleep(7)
     return pd.DataFrame(registros)
 
