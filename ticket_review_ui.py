@@ -151,7 +151,7 @@ def process_tickets_ui(excel_file, tickets_file):
             'Nome': row['nome'],
             'Handle': row['handle'],
             'Texto': row['mensagem'],
-            'Mídias': '\n'.join([f"<a href='{url.strip()}' target='_blank'>{url.strip()}</a>" for url in row['midia'].split(';') if url.strip()]),
+            'Mídias': row['midia'].replace(';', '\n'),
             'Assunto': asn,
             'Sentimento': sentiment,
             'Sugestão': sug,
@@ -174,8 +174,7 @@ def create_ticket_review_ui():
                 interactive=True,
                 column_widths=["50px","150px","150px","300px","200px","150px","100px","300px","100px"],
                 wrap=True,
-                elem_id="tickets_review_table",
-                render='html'
+                elem_id="tickets_review_table"
             )
             gr.HTML("""
 <style>
