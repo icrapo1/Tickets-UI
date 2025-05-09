@@ -188,14 +188,49 @@ def create_ticket_review_ui():
         with gr.Group():
             excel_file = gr.File(label="Arquivo de configuração (torabit.xlsx)", type="filepath")
             tickets_file = gr.File(label="Arquivo de tickets extraídos (tickets_extraidos.xlsx)", type="filepath")
-            process_btn = gr.Button("Processar Tickets")
+            process_btn = gr.Button("Processar Tickets", elem_id="process-btn")
+            # Loader HTML spinner
+            gr.HTML("""
+<div id="loader" style="display:none; justify-content:center; align-items:center;">
+  <div class="spinner"></div>
+</div>
+<style>
+#loader {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255,255,255,0.8);
+  z-index: 1000;
+}
+.spinner {
+  border: 16px solid #f3f3f3;
+  border-top: 16px solid #3498db;
+  border-radius: 50%;
+  width: 120px;
+  height: 120px;
+  animation: spin 1.5s linear infinite;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
+<script>
+document.getElementById('process-btn').addEventListener('click', function() {
+  document.getElementById('loader').style.display = 'flex';
+});
+</script>
+""")
         with gr.Group():
             review_html = gr.HTML(label="Revisão de Tickets")
             process_btn.click(
                 fn=process_tickets_ui,
                 inputs=[excel_file, tickets_file],
                 outputs=[review_html],
-                show_progress=True
+                _js="() => document.getElementById('loader').style.display='none'"
             )
     return demo
 
