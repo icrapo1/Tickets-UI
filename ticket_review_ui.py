@@ -179,7 +179,7 @@ def process_tickets_ui(excel_path, tickets_path):
   .tickets-table a {{ pointer-events: auto; color: #1a0dab; text-decoration: underline; }}
 </style>
 <div>{html_table}</div>
-<script>document.getElementById('loader').style.display='none';</script>
+<script>document.getElementById('loader-text').style.display='none';</script>
 """
     return html
 
@@ -190,38 +190,25 @@ def create_ticket_review_ui():
             excel_file = gr.File(label="Arquivo de configuração (torabit.xlsx)", type="filepath")
             tickets_file = gr.File(label="Arquivo de tickets extraídos (tickets_extraidos.xlsx)", type="filepath")
             process_btn = gr.Button("Processar Tickets", elem_id="process-btn")
-            # Loader HTML spinner
+            # Loader text indicador
             gr.HTML("""
-<div id="loader" style="display:none; justify-content:center; align-items:center;">
-  <div class="spinner"></div>
+<div id="loader-text" style="display:none; text-align:center; margin:10px;">
+  IA Processando
 </div>
 <style>
-#loader {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  display: none;
-  justify-content: center;
-  align-items: center;
-  background: rgba(255,255,255,0.8);
-  z-index: 1000;
+#loader-text {
+  font-size: 1.2em;
+  color: #3498db;
+  animation: fadeText 1s linear infinite alternate;
 }
-.spinner {
-  border: 16px solid #f3f3f3;
-  border-top: 16px solid #3498db;
-  border-radius: 50%;
-  width: 120px;
-  height: 120px;
-  animation: spin 1.5s linear infinite;
-}
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+@keyframes fadeText {
+  from { opacity: 1; }
+  to { opacity: 0.3; }
 }
 </style>
 <script>
 document.getElementById('process-btn').addEventListener('click', function() {
-  document.getElementById('loader').style.display = 'flex';
+  document.getElementById('loader-text').style.display = 'block';
 });
 </script>
 """)
