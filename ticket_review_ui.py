@@ -179,6 +179,7 @@ def process_tickets_ui(excel_path, tickets_path):
   .tickets-table a {{ pointer-events: auto; color: #1a0dab; text-decoration: underline; }}
 </style>
 <div>{html_table}</div>
+<script>document.getElementById('loader').style.display='none';</script>
 """
     return html
 
@@ -229,8 +230,7 @@ document.getElementById('process-btn').addEventListener('click', function() {
             process_btn.click(
                 fn=process_tickets_ui,
                 inputs=[excel_file, tickets_file],
-                outputs=[review_html],
-                _js="() => document.getElementById('loader').style.display='none'"
+                outputs=[review_html]
             )
     return demo
 
