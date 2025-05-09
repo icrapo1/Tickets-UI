@@ -88,12 +88,12 @@ Responda em JSON: {{ "assunto": ..., "sentiment": ..., "response": ... }}
     ]
     try:
         resp = openai.chat.completions.create(
-            model="gpt-4o-mini-2024-07-18", messages=msgs, max_tokens=1024, temperature=1
+            model="gpt-4o", messages=msgs, max_tokens=1024, temperature=1
         )
     except Exception as e:
         if "invalid_image_url" in str(e):
             resp = openai.chat.completions.create(
-                model="gpt-4o-mini-2024-07-18", messages=[msgs[0],{"role":"user","content":base}], max_tokens=1024, temperature=1
+                model="gpt-4o", messages=[msgs[0],{"role":"user","content":base}], max_tokens=1024, temperature=1
             )
         else:
             raise
@@ -146,17 +146,14 @@ def process_tickets_ui(excel_file, tickets_file):
         )
         # filter media links, ignore torabit domain
         media_list = [m.strip() for m in row['midia'].split(';') if m.strip() and not m.strip().startswith('https://tora.torabit.com.br')]
-        # build HTML string with numbered links within same cell
-        links_html = '<br>'.join([
-            f"Link {i+1}: <a href='{url}' target='_blank'>{url}</a>"
-            for i, url in enumerate(media_list)
-        ])
+        # join raw links with newline
+        links_str = '\n'.join(media_list)
         registros.append({
             'ID': idx+1,
             'Nome': row['nome'],
             'Handle': row['handle'],
             'Texto': row['mensagem'],
-            'Mídias': links_html,
+            'Mídias': links_str,
             'Assunto': asn,
             'Sentimento': sentiment,
             'Sugestão': sug,
@@ -164,22 +161,8 @@ def process_tickets_ui(excel_file, tickets_file):
         })
         time.sleep(7)
     df_out = pd.DataFrame(registros)
-    df_out['Texto'] = df_out['Texto'].apply(lambda x: x.replace('\n', '<br>'))
-    html_table = df_out.to_html(classes="tickets-table", index=False, escape=False)
-    html = f"""
-<style>
-  .tickets-table {{ border-collapse: collapse; width: 100%; table-layout: fixed; }}
-  .tickets-table th, .tickets-table td {{ border: 1px solid #ddd; padding: 8px; }}
-  .tickets-table tr:nth-child(even) {{ background-color: #f2f2f2; }}
-  .tickets-table th {{ padding: 12px; background-color: #4CAF50; color: white; }}
-  .tickets-table th:nth-child(5), .tickets-table td:nth-child(5) {{ width: 150px; }}
-  .tickets-table td {{ white-space: pre-wrap !important; word-break: break-word; }}
-</style>
-<div>
-{html_table}
-</div>
-"""
-    return html
+    # Return DataFrame for editable display (preserve newlines)
+    return df_out
 
 
 def create_ticket_review_ui():
@@ -189,21 +172,21 @@ def create_ticket_review_ui():
             tickets_file = gr.File(label="Arquivo de tickets extraídos (tickets_extraidos.xlsx)", type="filepath")
             process_btn = gr.Button("Processar Tickets")
         with gr.Group():
-            review_html = gr.HTML(label="Revisão de Tickets")
-            status = gr.Markdown(visible=True)
-            # Chain events: show status -> process IA -> clear status
-            evt = process_btn.click(
-                fn=lambda: '<div id="loading"><div class="spinner"></div><span id="timer">0s</span></div><style>.spinner { border: 4px solid rgba(0,0,0,0.1); border-left-color: #4CAF50; border-radius:50%; width:16px; height:16px; animation:spin 1s linear infinite; } @keyframes spin { to { transform:rotate(360deg); } }</style><script>var start=Date.now(); setInterval(function(){ var sec = Math.floor((Date.now() - start) / 1000); document.getElementById("timer").innerText = sec + "s"; }, 1000);</script>',
-                inputs=[], outputs=[status], queue=False
+            review_sheet = gr.Sheet(
+                value=None,
+                headers=["ID","Nome","Handle","Texto","Mídias","Assunto","Sentimento","Sugestão","Enviar"],
+                datatype=["int","str","str","str","str","str","str","str","str"],
+                label="Revisão de Tickets",
+                interactive=True,
+                editable=True,
+                wrap=True,
+                col_widths=["50px","150px","150px","300px","150px","100px","100px","200px","100px"]
             )
-            evt = evt.then(
+            process_btn.click(
                 fn=process_tickets_ui,
                 inputs=[excel_file, tickets_file],
-                outputs=[review_html]
-            )
-            evt.then(
-                fn=lambda: "",
-                inputs=[], outputs=[status]
+                outputs=[review_sheet],
+                show_progress=True
             )
     return demo
 
