@@ -111,13 +111,13 @@ Responda em JSON: {{ "assunto": ..., "sentiment": ..., "response": ... }}
     return sentiment, response, assunto
 
 
-def process_tickets_ui(excel_file, tickets_file):
-    wb = pd.ExcelFile(excel_file)
+def process_tickets_ui(excel_path, tickets_path):
+    wb = pd.ExcelFile(excel_path)
     df_assuntos = pd.read_excel(wb, 'assuntos')
     df_respostas = pd.read_excel(wb, 'respostas')
     assuntos = df_assuntos['Assunto'].tolist()
     respostas = df_respostas.to_dict(orient='records')
-    df_t = pd.read_excel(tickets_file)
+    df_t = pd.read_excel(tickets_path)
     agrup = []
     for t, g in df_t.groupby('ticket'):
         msgs, mids = [], []
@@ -161,8 +161,26 @@ def process_tickets_ui(excel_file, tickets_file):
         })
         time.sleep(7)
     df_out = pd.DataFrame(registros)
-    # Return DataFrame for editable display (preserve newlines)
-    return df_out
+    # Tratamento de quebras de linha no Texto e numeração de links na coluna Mídias
+    df_out['Texto'] = df_out['Texto'].apply(lambda x: x.replace('\n', '<br>'))
+    df_out['Mídias'] = df_out['Mídias'].apply(lambda cell: '<br>'.join([
+        f"Link {i+1}: <a href='{url}' target='_blank'>{url}</a>" for i, url in enumerate(cell.split('\n')) if url
+    ]))
+    # Gera tabela HTML editável com links numerados
+    html_table = df_out.to_html(classes="tickets-table", index=False, escape=False)
+    html_table = html_table.replace('<table ', '<table id="tickets-review-table" contenteditable="true" ')
+    html = f"""
+<style>
+  .tickets-table {{ border-collapse: collapse; width: 100%; table-layout: fixed; }}
+  .tickets-table th, .tickets-table td {{ border: 1px solid #ddd; padding: 8px; }}
+  .tickets-table tr:nth-child(even) {{ background-color: #f2f2f2; }}
+  .tickets-table th {{ padding: 12px; background-color: #4CAF50; color: white; }}
+  .tickets-table td {{ white-space: pre-wrap; word-break: break-word; }}
+  .tickets-table a {{ pointer-events: auto; color: #1a0dab; text-decoration: underline; }}
+</style>
+<div>{html_table}</div>
+"""
+    return html
 
 
 def create_ticket_review_ui():
@@ -172,20 +190,11 @@ def create_ticket_review_ui():
             tickets_file = gr.File(label="Arquivo de tickets extraídos (tickets_extraidos.xlsx)", type="filepath")
             process_btn = gr.Button("Processar Tickets")
         with gr.Group():
-            review_sheet = gr.Sheet(
-                value=None,
-                headers=["ID","Nome","Handle","Texto","Mídias","Assunto","Sentimento","Sugestão","Enviar"],
-                datatype=["int","str","str","str","str","str","str","str","str"],
-                label="Revisão de Tickets",
-                interactive=True,
-                editable=True,
-                wrap=True,
-                col_widths=["50px","150px","150px","300px","150px","100px","100px","200px","100px"]
-            )
+            review_html = gr.HTML(label="Revisão de Tickets")
             process_btn.click(
                 fn=process_tickets_ui,
                 inputs=[excel_file, tickets_file],
-                outputs=[review_sheet],
+                outputs=[review_html],
                 show_progress=True
             )
     return demo
